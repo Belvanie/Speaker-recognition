@@ -4,8 +4,10 @@ import numpy as np
 import librosa
 import soundfile as sf
 import tempfile
+from streamlit_webrtc import webrtc_streamer, WebRtcMode, ClientSettings
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
+import av
 
 encoder = LabelEncoder()
 encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 'Harlette', 'Ines', 'Nahomie', 'Ngoran', 'Sasha'])
@@ -52,3 +54,36 @@ if audio_file is not None:
     st.audio(audio_file)
     predictions = prediction(audio_file)
     st.write(f"Le locuteur prédit est {predictions[0]}")
+
+# Enregistrement et traitement de l'audio en direct
+st.write("Ou enregistrez votre voix :")
+webrtc_ctx = webrtc_streamer(
+    key="example",
+    mode=WebRtcMode.SENDONLY,
+    client_settings=ClientSettings(
+        media_stream_constraints={
+            "audio": True,
+            "video": False,
+        },
+    ),
+    audio_receiver_size=512,
+)
+
+if webrtc_ctx.audio_receiver:
+    audio_frames = []
+
+    while True:
+        try:
+            audio_frame = webrtc_ctx.audio_receiver.get_frame(timeout=1)
+        except av.error.FFmpegError:
+            break
+        audio_frames.append(audio_frame)
+
+    if len(audio_frames) > 0:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+            sf.write(tmp_file.name, np.concatenate([frame.to_ndarray() for frame in audio_frames]), samplerate=16000)
+            audio_path = tmp_file.name
+
+        st.audio(audio_path)
+        predictions = prediction(audio_path)
+        st.write(f"Le locuteur prédit est {predictions[0]}")

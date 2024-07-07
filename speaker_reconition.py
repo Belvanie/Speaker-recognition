@@ -92,3 +92,4 @@ if webrtc_ctx.audio_receiver:
         st.audio(audio_path)
         predictions = prediction(audio_path)
         st.write(f"Le locuteur prédit est {predictions[0]}")
+    
