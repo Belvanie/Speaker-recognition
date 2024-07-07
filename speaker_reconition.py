@@ -9,34 +9,24 @@ from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 import av
 
+# Encoder pour les labels de locuteurs
 encoder = LabelEncoder()
 encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 'Harlette', 'Ines', 'Nahomie', 'Ngoran', 'Sasha'])
+
 # Chargement du modele
 model = load_model('speaker_detection_gru.h5')
 
-# Chemin vers le dossier contenant nos fichiers
-#fichier = '/home/nunmua/INF/M I/SEM 2/ML_II/TP/belvanie_test_2.m4a'
-
 # Convertion des fichiers .m4a, .acc, .ogg en .wav
 def convert_to_wav(filename):
-    # Utiliser un fichier temporaire pour enregistrer le contenu de l'objet UploadedFile
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.m4a') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         temp_file.write(filename.read())
         temp_filename = temp_file.name
 
-    # Charger le fichier temporaire avec librosa
-    y, s = librosa.load(temp_filename, sr=16000)  # Charge le fichier et resample à 16000 Hz, ce qui nous permet de normaliser nos donnees
-    yt, index = librosa.effects.trim(y, top_db=30, frame_length=512, hop_length=64) # top_db est le seuil en dB sous lequel le signal est considéré comme du silence
-    
-    # Créer un nouveau nom de fichier pour le fichier .wav
-    new_filename = os.path.splitext(temp_filename)[0] + '.wav'  # Change l'extension du fichier
-    
-    # Écrire le fichier au format .wav
-    sf.write(new_filename, yt, s)  # Écrit le fichier au format .wav
-    
-    # Supprimer le fichier temporaire .m4a
+    y, s = librosa.load(temp_filename, sr=16000) 
+    yt, _ = librosa.effects.trim(y, top_db=30, frame_length=512, hop_length=64) 
+    new_filename = os.path.splitext(temp_filename)[0] + '.wav'  
+    sf.write(new_filename, yt, s)
     os.remove(temp_filename)
-
     return new_filename
 
 # Fonction pour l'extraction des caracteristiques
@@ -54,14 +44,8 @@ def prediction(audio_file):
     pred = model.predict(data_reshape)
     pred = np.argmax(pred, axis=1)
     pred_1d = pred.flatten()
-
     pred_decoded = encoder.inverse_transform(pred_1d)
-
-    # Afficher la prédiction
-    #print(pred_decoded)
     return pred_decoded
-
-#predictions = prediction(fichier)
 
 # Interface utilisateur
 st.title("RECONNAISSANCE DU LOCUTEUR")
@@ -72,6 +56,39 @@ audio_file = st.file_uploader("Télécharger un fichier audio", type=["wav", "mp
 
 # Traitement et prédiction pour le fichier téléchargé
 if audio_file is not None:
-    st.audio(audio_file)#, format='audio/wav')
+    st.audio(audio_file)
     predictions = prediction(audio_file)
     st.write(f"Le locuteur prédit est {predictions[0]}")
+
+# Enregistrement et traitement de l'audio en direct
+st.write("Ou enregistrez votre voix :")
+webrtc_ctx = webrtc_streamer(
+    key="example",
+    mode=WebRtcMode.SENDONLY,
+    client_settings=ClientSettings(
+        media_stream_constraints={
+            "audio": True,
+            "video": False,
+        },
+    ),
+    audio_receiver_size=512,
+)
+
+if webrtc_ctx.audio_receiver:
+    audio_frames = []
+
+    while True:
+        try:
+            audio_frame = webrtc_ctx.audio_receiver.get_frame(timeout=1)
+        except av.error.FFmpegError:
+            break
+        audio_frames.append(audio_frame)
+
+    if len(audio_frames) > 0:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+            sf.write(tmp_file.name, np.concatenate([frame.to_ndarray() for frame in audio_frames]), samplerate=16000)
+            audio_path = tmp_file.name
+
+        st.audio(audio_path)
+        predictions = prediction(audio_path)
+        st.write(f"Le locuteur prédit est {predictions[0]}")
