@@ -5,5 +5,4 @@ soundfile
 tensorflow
 scikit-learn
 streamlit-webrtc
-tempfile
 av
