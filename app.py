@@ -9,7 +9,6 @@ from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 import av
 import traceback
-from pydub import AudioSegment
 
 encoder = LabelEncoder()
 encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 'Harlette', 'Ines', 'Nahomie', 'Ngoran', 'Sasha'])
