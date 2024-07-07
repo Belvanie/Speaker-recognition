@@ -12,7 +12,7 @@ import av
 encoder = LabelEncoder()
 encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 'Harlette', 'Ines', 'Nahomie', 'Ngoran', 'Sasha'])
 # Chargement du modele
-model = load_model('/home/nunmua/INF/M I/SEM 2/ML_II/TP/speaker_detection_gru.h5')
+model = load_model('speaker_detection_gru.h5')
 
 # Chemin vers le dossier contenant nos fichiers
 #fichier = '/home/nunmua/INF/M I/SEM 2/ML_II/TP/belvanie_test_2.m4a'
