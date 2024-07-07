@@ -11,7 +11,7 @@ encoder = LabelEncoder()
 encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 'Harlette', 'Ines', 'Nahomie', 'Ngoran', 'Sasha'])
 
 # Chargement du modèle
-model = load_model('/home/nunmua/INF/M I/SEM 2/ML_II/TP/speaker_detection_gru.h5')
+model = load_model('speaker_detection_gru.h5')
 
 def convert_to_wav(filename):
     with tempfile.NamedTemporaryFile(delete=False, suffix='.m4a') as temp_file:
