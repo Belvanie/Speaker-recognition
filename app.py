@@ -19,24 +19,16 @@ model = load_model('speaker_detection_gru.h5')
 
 def convert_to_wav(filename):
     try:
-        # Lire le fichier audio avec Pydub
-        audio = AudioSegment.from_file(filename)
-        # Convertir en WAV
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+            temp_filename = temp_file.name
+
+        audio = AudioSegment.from_file_using_temporary_files(filename)
         audio = audio.set_frame_rate(16000).set_channels(1)
-        audio.export(filename, format="wav")
+        audio.export(temp_filename, format='wav')
 
-        # Charger le fichier WAV avec librosa
-        y, s = librosa.load(filename, sr=16000)
-        yt, _ = librosa.effects.trim(y, top_db=30, frame_length=512, hop_length=64)
-
-        # Écrire le fichier WAV traité
-        new_filename = os.path.splitext(filename)[0] + '.wav'
-        sf.write(new_filename, yt, s)
-
-        return new_filename
+        return temp_filename
     except Exception as e:
         st.error(f"Erreur de conversion en WAV: {e}")
-        traceback.print_exc()  # Imprimer la trace de la pile
         return None
 
 def extract_mfcc_features(filename, n_mfcc=13):
