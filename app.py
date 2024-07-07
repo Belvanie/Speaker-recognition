@@ -16,22 +16,9 @@ encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 
 # Chargement du modèle
 model = load_model('speaker_detection_gru.h5')
 
-"""def convert_to_wav(filename):
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.m4a') as temp_file:
-        temp_file.write(filename.read())
-        temp_filename = temp_file.name
-
-    y, s = librosa.load(temp_filename, sr=16000)
-    yt, _ = librosa.effects.trim(y, top_db=30, frame_length=512, hop_length=64)
-    new_filename = os.path.splitext(temp_filename)[0] + '.wav'
-    sf.write(new_filename, yt, s)
-    os.remove(temp_filename)
-
-    return new_filename"""
-
 def convert_to_wav(filename):
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.m4a') as temp_file:
             temp_filename = temp_file.name
 
         audio = AudioSegment.from_file_using_temporary_files(filename)
@@ -105,7 +92,7 @@ if webrtc_ctx.audio_receiver:
         audio_frames.append(audio_frame)
 
     if len(audio_frames) > 0:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as tmp_file:
             sf.write(tmp_file.name, np.concatenate([frame.to_ndarray() for frame in audio_frames]), samplerate=16000)
             audio_path = tmp_file.name
 
