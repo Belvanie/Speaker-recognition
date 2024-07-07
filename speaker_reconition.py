@@ -18,7 +18,7 @@ model = load_model('speaker_detection_gru.h5')
 
 # Convertion des fichiers .m4a, .acc, .ogg en .wav
 def convert_to_wav(filename):
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.m4a') as temp_file:
         temp_file.write(filename.read())
         temp_filename = temp_file.name
 
