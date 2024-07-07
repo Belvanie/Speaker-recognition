@@ -7,3 +7,4 @@ streamlit-webrtc==0.47.7
 tensorflow==2.13.1
 av==12.2.0
 audioread==3.0.1
+pydub==0.25.1

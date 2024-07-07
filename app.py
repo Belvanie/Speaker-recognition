@@ -8,6 +8,7 @@ from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 import av
+from pydub import AudioSegment
 
 encoder = LabelEncoder()
 encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 'Harlette', 'Ines', 'Nahomie', 'Ngoran', 'Sasha'])
@@ -15,7 +16,7 @@ encoder.fit(['Bahaouddyn', 'Belvanie', 'Brel', 'Clement', 'Danielle', 'Emeric', 
 # Chargement du modèle
 model = load_model('speaker_detection_gru.h5')
 
-def convert_to_wav(filename):
+"""def convert_to_wav(filename):
     with tempfile.NamedTemporaryFile(delete=False, suffix='.m4a') as temp_file:
         temp_file.write(filename.read())
         temp_filename = temp_file.name
@@ -26,10 +27,26 @@ def convert_to_wav(filename):
     sf.write(new_filename, yt, s)
     os.remove(temp_filename)
 
-    return new_filename
+    return new_filename"""
+
+def convert_to_wav(filename):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+            temp_filename = temp_file.name
+
+        audio = AudioSegment.from_file_using_temporary_files(filename)
+        audio = audio.set_frame_rate(16000).set_channels(1)
+        audio.export(temp_filename, format='wav')
+
+        return temp_filename
+    except Exception as e:
+        st.error(f"Erreur de conversion en WAV: {e}")
+        return None
 
 def extract_mfcc_features(filename, n_mfcc=13):
     audio_path = convert_to_wav(filename)
+    if audio_path is None:
+        return None
     y, sr = librosa.load(audio_path, sr=None)
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
     mfcc_mean = np.mean(mfcc.T, axis=0)
@@ -37,13 +54,19 @@ def extract_mfcc_features(filename, n_mfcc=13):
 
 def prediction(audio_file):
     mfcc = extract_mfcc_features(audio_file)
-    data = mfcc.reshape(1, 13)
-    data_reshape = np.reshape(data, (data.shape[0], data.shape[1], 1))
-    pred = model.predict(data_reshape)
-    pred = np.argmax(pred, axis=1)
-    pred_1d = pred.flatten()
-    pred_decoded = encoder.inverse_transform(pred_1d)
-    return pred_decoded
+    if mfcc is None:
+        return ["Erreur de traitement de l'audio"]
+    try:
+        data = mfcc.reshape(1, 13)
+        data_reshape = np.reshape(data, (data.shape[0], data.shape[1], 1))
+        pred = model.predict(data_reshape)
+        pred = np.argmax(pred, axis=1)
+        pred_1d = pred.flatten()
+        pred_decoded = encoder.inverse_transform(pred_1d)
+        return pred_decoded
+    except Exception as e:
+        st.error(f"Erreur de prédiction: {e}")
+        return ["Erreur de prédiction"]
 
 st.title("RECONNAISSANCE DU LOCUTEUR")
 st.write("Veuillez télécharger un fichier audio pour identifier le locuteur")
@@ -82,7 +105,7 @@ if webrtc_ctx.audio_receiver:
         audio_frames.append(audio_frame)
 
     if len(audio_frames) > 0:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as tmp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
             sf.write(tmp_file.name, np.concatenate([frame.to_ndarray() for frame in audio_frames]), samplerate=16000)
             audio_path = tmp_file.name
 
